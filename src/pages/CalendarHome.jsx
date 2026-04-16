@@ -27,12 +27,18 @@ export default function CalendarHome() {
 
       {/* Controls */}
       <div
-        className="sticky top-14 z-30 border-b px-4 sm:px-6 py-3 shadow-sm"
+        className="sticky top-14 z-30 border-b shadow-sm"
         style={{ backgroundColor: 'var(--parchment)' }}
       >
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <AgeGroupTabs activeGroupId={ageGroupId} onChange={setAgeGroupId} />
-          <MonthPicker year={year} month={month} onChange={handleMonthChange} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Row 1 — age group tabs (full width on mobile) */}
+          <div className="pt-3 pb-2">
+            <AgeGroupTabs activeGroupId={ageGroupId} onChange={setAgeGroupId} />
+          </div>
+          {/* Row 2 — month picker right-aligned */}
+          <div className="flex justify-end pb-3">
+            <MonthPicker year={year} month={month} onChange={handleMonthChange} />
+          </div>
         </div>
       </div>
 
