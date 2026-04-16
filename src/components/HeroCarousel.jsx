@@ -125,27 +125,10 @@ export default function HeroCarousel() {
       })}
 
       {/* ═══════════════════════════════════════════════════
-          TOP BAR — brand + tagline
-      ════════════════════════════════════════════════════ */}
-      <div className="absolute top-0 left-0 right-0 z-20 px-6 sm:px-10 pt-6
-                      flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl drop-shadow-lg">🌿</span>
-          <span className="font-serif-display text-lg font-bold text-white tracking-wide drop-shadow-lg">
-            RootedWord
-          </span>
-        </div>
-        <p className="hidden sm:block font-serif-display italic text-white text-sm"
-          style={{ opacity: 0.7 }}>
-          Plant the Word. Grow in Faith.
-        </p>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════
           FROSTED GLASS VERSE CARD
       ════════════════════════════════════════════════════ */}
       <div className="absolute inset-0 z-10 flex items-center justify-center px-5 sm:px-10"
-        style={{ paddingTop: 64, paddingBottom: 64 }}>
+        style={{ paddingTop: 40, paddingBottom: 64 }}>
         <div
           key={current}
           className="animate-fade-in-up w-full max-w-2xl rounded-2xl sm:rounded-3xl px-7 sm:px-10 py-8 sm:py-10"
