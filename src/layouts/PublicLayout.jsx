@@ -12,12 +12,6 @@ export default function PublicLayout({ children }) {
               <p className="text-xs text-green-200 hidden sm:block leading-none">Plant the Word. Grow in Faith.</p>
             </div>
           </Link>
-          <Link
-            to="/admin/login"
-            className="text-xs text-green-300 hover:text-white transition-colors"
-          >
-            Admin
-          </Link>
         </div>
       </header>
 
