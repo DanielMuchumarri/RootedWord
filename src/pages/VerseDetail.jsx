@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AGE_GROUP_BY_ID } from '../lib/constants'
 import { format, parseISO } from 'date-fns'
@@ -8,6 +8,9 @@ import { ChevronLeft, ChevronRight, ArrowLeft, Copy, Check } from 'lucide-react'
 export default function VerseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  // Restore the exact calendar URL the user came from (group + month + year)
+  const calendarHref = location.state?.from || '/'
   const [verse, setVerse] = useState(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -101,7 +104,7 @@ export default function VerseDetail() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 animate-fade-in-up">
       {/* Back button */}
       <Link
-        to="/"
+        to={calendarHref}
         className="inline-flex items-center gap-1.5 text-sm font-medium mb-6 transition-colors hover:opacity-80"
         style={{ color: group.color }}
       >

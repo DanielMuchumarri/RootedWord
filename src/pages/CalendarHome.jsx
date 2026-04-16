@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MONTHS, AGE_GROUP_BY_ID } from '../lib/constants'
 import { useMonthVerses } from '../hooks/useVerses'
 import AgeGroupTabs from '../components/AgeGroupTabs'
@@ -8,16 +8,23 @@ import HeroCarousel from '../components/HeroCarousel'
 
 export default function CalendarHome() {
   const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
-  const [ageGroupId, setAgeGroupId] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Read state from URL; fall back to sensible defaults
+  const year       = parseInt(searchParams.get('year')  || now.getFullYear(), 10)
+  const month      = parseInt(searchParams.get('month') || (now.getMonth() + 1), 10)
+  const ageGroupId = parseInt(searchParams.get('group') || 1, 10)
+
+  // Write state back to URL (replace — no extra history entries for tab/month changes)
+  function setYear(y)        { setSearchParams({ group: ageGroupId, year: y, month }, { replace: true }) }
+  function setMonth(m)       { setSearchParams({ group: ageGroupId, year, month: m }, { replace: true }) }
+  function setAgeGroupId(g)  { setSearchParams({ group: g, year, month }, { replace: true }) }
 
   const { verses, loading } = useMonthVerses(year, month, ageGroupId)
   const group = AGE_GROUP_BY_ID[ageGroupId]
 
   function handleMonthChange(y, m) {
-    setYear(y)
-    setMonth(m)
+    setSearchParams({ group: ageGroupId, year: y, month: m }, { replace: true })
   }
 
   return (

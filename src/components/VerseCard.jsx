@@ -1,9 +1,10 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { AGE_GROUP_BY_ID } from '../lib/constants'
 import { format, isToday, isPast, isFuture } from 'date-fns'
 
 export default function VerseCard({ date, verse, ageGroupId }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const group = AGE_GROUP_BY_ID[ageGroupId]
   const dateObj = new Date(date + 'T00:00:00')
   const today = isToday(dateObj)
@@ -11,7 +12,11 @@ export default function VerseCard({ date, verse, ageGroupId }) {
   const future = isFuture(dateObj)
 
   function handleClick() {
-    if (verse) navigate(`/verse/${verse.id}`)
+    if (!verse) return
+    // Pass current calendar URL (with group/month/year params) so VerseDetail can navigate back to it
+    navigate(`/verse/${verse.id}`, {
+      state: { from: location.pathname + location.search },
+    })
   }
 
   return (
