@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --green-deep: #1B4332;
+  --green-mid: #2D6A4F;
+  --green-light: #B7E4C7;
+  --green-pale: #D8F3DC;
+  --gold-accent: #D4A017;
+  --parchment: #FDF8F0;
+  --warm-white: #FFFFFF;
+  --text-dark: #1A1A2E;
+  --text-mid: #4A5568;
+  --text-light: #9CA3AF;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--parchment);
+  color: var(--text-dark);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.font-serif-display {
+  font-family: 'Lora', serif;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s ease both;
+}
