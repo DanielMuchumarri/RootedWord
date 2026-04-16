@@ -4,6 +4,7 @@ import { useMonthVerses } from '../hooks/useVerses'
 import AgeGroupTabs from '../components/AgeGroupTabs'
 import MonthPicker from '../components/MonthPicker'
 import CalendarGrid from '../components/CalendarGrid'
+import HeroCarousel from '../components/HeroCarousel'
 
 export default function CalendarHome() {
   const now = new Date()
@@ -21,29 +22,8 @@ export default function CalendarHome() {
 
   return (
     <div>
-      {/* Hero */}
-      <div
-        className="relative py-14 px-4 text-center overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, ${group.color} 0%, #40916C 50%, #52B788 100%)`,
-        }}
-      >
-        <div className="relative z-10 max-w-2xl mx-auto animate-fade-in-up">
-          <p className="text-green-200 text-sm font-medium tracking-widest uppercase mb-2">
-            Colossians 2:7
-          </p>
-          <h1 className="font-serif-display text-4xl sm:text-5xl font-bold text-white mb-3">
-            RootedWord
-          </h1>
-          <p className="text-green-100 text-lg italic font-serif-display">
-            Plant the Word. Grow in Faith.
-          </p>
-        </div>
-        {/* Decorative leaves */}
-        <div className="absolute left-4 top-4 text-4xl opacity-20 select-none">🌿</div>
-        <div className="absolute right-8 bottom-4 text-5xl opacity-15 select-none rotate-45">🍃</div>
-        <div className="absolute right-4 top-8 text-3xl opacity-10 select-none">🌱</div>
-      </div>
+      {/* Hero Carousel */}
+      <HeroCarousel />
 
       {/* Controls */}
       <div
