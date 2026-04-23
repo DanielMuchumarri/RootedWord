@@ -6,20 +6,29 @@
 import ExcelJS from 'exceljs'
 import { supabase } from './supabase'
 import { AGE_GROUPS } from './constants'
+import { normalizeRef, isValidRef } from './verseReference'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-/** All active bible translations — IDs must match the live DB */
+/**
+ * Active bible translations — IDs verified against the live DB:
+ *   SELECT id, code FROM bible_translations ORDER BY id;
+ *   → 1=ESV, 2=NIV, 3=TEL
+ */
 export const TRANSLATION_COLUMNS = [
   { id: 1, code: 'ESV', langCode: 'en', label: 'ESV — English Standard Version', required: true  },
   { id: 2, code: 'NIV', langCode: 'en', label: 'NIV — New International Version', required: false },
   { id: 3, code: 'TEL', langCode: 'te', label: 'Telugu Bible',                    required: false },
 ]
 
-/** Languages that have a reflection column in the template */
+/**
+ * Languages with reflection columns — IDs verified against the live DB:
+ *   SELECT id, code FROM languages ORDER BY id;
+ *   → 1=en (English), 2=te (Telugu)
+ */
 const REFLECTION_LANGUAGES = [
-  { code: 'en', id: 1, label: 'English Reflection',  note: 'Shared for ESV & NIV (and any future English translation)' },
-  { code: 'te', id: 2, label: 'Telugu Reflection',   note: 'Optional — leave blank if not available' },
+  { code: 'en', id: 1, label: 'English Reflection',  note: 'Shared for ESV & NIV' },
+  { code: 'te', id: 2, label: 'Telugu Reflection',   note: 'Optional' },
 ]
 
 const AGE_GROUP_LABELS   = AGE_GROUPS.map((g) => `${g.label} (${g.ageRange})`)
@@ -27,8 +36,8 @@ const AGE_GROUP_BY_LABEL = Object.fromEntries(
   AGE_GROUPS.map((g) => [`${g.label} (${g.ageRange})`.toLowerCase(), g.id])
 )
 
-const STORAGE_BUCKET  = 'admin-assets'
-const TEMPLATE_PATH   = 'templates/verse-upload-template.xlsx'
+const STORAGE_BUCKET = 'admin-assets'
+const TEMPLATE_PATH  = 'templates/verse-upload-template.xlsx'
 
 // ── Styling helpers ───────────────────────────────────────────────────────────
 
@@ -38,7 +47,6 @@ const C = {
   reqHeaderBg: '2D6A4F',
   sampleBg:    'D8F3DC',
   sampleFont:  '1B4332',
-  reflBg:      'FFF8E7',    // warm amber tint for reflection columns
   borderColor: 'B7E4C7',
   accentGold:  'D4A017',
 }
@@ -61,39 +69,39 @@ function applySampleStyle(cell) {
 
 // ── Column definitions ────────────────────────────────────────────────────────
 //
-// Layout:
+// Layout (matches parsing order exactly — do NOT reorder):
 //   A  Verse Date               (required)
-//   B  Verse Reference          (required)
+//   B  Verse Reference          (required, format validated)
 //   C  Age Group                (required, dropdown)
-//   D  Active                   (required, dropdown Yes/No)
+//   D  Active                   (required, Yes/No)
 //   E  ESV Verse Text           (required)
 //   F  NIV Verse Text           (optional)
-//   G  English Reflection       (optional – shared for ALL English translations)
-//   H  English Live It Out      (optional – practical steps, shared for English)
+//   G  English Reflection       (optional — shared for all English translations)
+//   H  English Live It Out      (optional)
 //   I  Telugu Verse Text        (optional)
 //   J  Telugu Reflection        (optional)
 //   K  Telugu Live It Out       (optional)
 //
 const COLUMNS = [
-  { key: 'verse_date',      header: 'Verse Date *',                                   width: 14, headerBg: C.reqHeaderBg },
-  { key: 'verse_ref',       header: 'Verse Reference *',                               width: 22, headerBg: C.reqHeaderBg },
-  { key: 'age_group',       header: 'Age Group *',                                     width: 26, headerBg: C.reqHeaderBg },
-  { key: 'is_active',       header: 'Active *',                                        width: 10, headerBg: C.reqHeaderBg },
-  { key: 'esv_verse',       header: 'ESV — Verse Text  [Required]',                   width: 45, headerBg: C.reqHeaderBg },
-  { key: 'niv_verse',       header: 'NIV — Verse Text  [Optional]',                   width: 45, headerBg: C.headerBg   },
-  { key: 'en_reflection',   header: 'English Reflection  [Optional · ESV + NIV]',    width: 45, headerBg: 'A0522D'     },
-  { key: 'en_live_it_out',  header: 'English Live It Out  [Optional · ESV + NIV]',   width: 45, headerBg: 'A0522D'     },
-  { key: 'tel_verse',       header: 'Telugu — Verse Text  [Optional]',                width: 45, headerBg: C.headerBg   },
-  { key: 'tel_reflection',  header: 'Telugu Reflection  [Optional]',                   width: 45, headerBg: '5C3D11'    },
-  { key: 'tel_live_it_out', header: 'Telugu Live It Out  [Optional]',                  width: 45, headerBg: '5C3D11'    },
+  { key: 'verse_date',      header: 'Verse Date *',                                  width: 14, headerBg: C.reqHeaderBg },
+  { key: 'verse_ref',       header: 'Verse Reference *',                              width: 22, headerBg: C.reqHeaderBg },
+  { key: 'age_group',       header: 'Age Group *',                                    width: 26, headerBg: C.reqHeaderBg },
+  { key: 'is_active',       header: 'Active *',                                       width: 10, headerBg: C.reqHeaderBg },
+  { key: 'esv_verse',       header: 'ESV — Verse Text  [Required]',                  width: 45, headerBg: C.reqHeaderBg },
+  { key: 'niv_verse',       header: 'NIV — Verse Text  [Optional]',                  width: 45, headerBg: C.headerBg   },
+  { key: 'en_reflection',   header: 'English Reflection  [Optional · ESV + NIV]',   width: 45, headerBg: 'A0522D'     },
+  { key: 'en_live_it_out',  header: 'English Live It Out  [Optional · ESV + NIV]',  width: 45, headerBg: 'A0522D'     },
+  { key: 'tel_verse',       header: 'Telugu — Verse Text  [Optional]',               width: 45, headerBg: C.headerBg   },
+  { key: 'tel_reflection',  header: 'Telugu Reflection  [Optional]',                  width: 45, headerBg: '5C3D11'    },
+  { key: 'tel_live_it_out', header: 'Telugu Live It Out  [Optional]',                 width: 45, headerBg: '5C3D11'    },
 ]
 
 // ── Template generation ───────────────────────────────────────────────────────
 
 export async function generateTemplate() {
-  const wb = new ExcelJS.Workbook()
-  wb.creator  = 'RootedWord'
-  wb.created  = new Date()
+  const wb     = new ExcelJS.Workbook()
+  wb.creator   = 'RootedWord'
+  wb.created   = new Date()
 
   // ── Sheet 1: Verse Upload ─────────────────────────────────────────────────
   const ws = wb.addWorksheet('Verse Upload', {
@@ -112,7 +120,7 @@ export async function generateTemplate() {
     applyHeaderStyle(cell, col.headerBg)
   })
 
-  // Row 2 — sample data
+  // Row 2 — sample data (admin deletes before uploading)
   const sampleRow = ws.addRow({
     verse_date:      new Date(2025, 0, 1),
     verse_ref:       'John 3:16',
@@ -130,7 +138,7 @@ export async function generateTemplate() {
   sampleRow.eachCell((cell) => applySampleStyle(cell))
   sampleRow.getCell(1).numFmt = 'yyyy-mm-dd'
 
-  // Data validation
+  // Data validations
   ws.dataValidations.add('C3:C1001', {
     type: 'list', allowBlank: false,
     formulae: [`"${AGE_GROUP_LABELS.join(',')}"`],
@@ -140,14 +148,12 @@ export async function generateTemplate() {
     showInputMessage: true, promptTitle: 'Age Group',
     prompt: 'Select the age group this verse is for',
   })
-
   ws.dataValidations.add('D3:D1001', {
     type: 'list', allowBlank: false,
     formulae: ['"Yes,No"'],
     showErrorMessage: true, errorStyle: 'error',
     errorTitle: 'Invalid Value', error: 'Please select Yes or No',
   })
-
   ws.dataValidations.add('A3:A1001', {
     type: 'date', operator: 'between',
     formulae: [new Date(2000, 0, 1), new Date(2099, 11, 31)],
@@ -155,16 +161,27 @@ export async function generateTemplate() {
     showInputMessage: true, promptTitle: 'Verse Date',
     prompt: 'Enter date in YYYY-MM-DD format (e.g. 2025-01-01)',
   })
-
   for (let r = 3; r <= 1001; r++) ws.getCell(`A${r}`).numFmt = 'yyyy-mm-dd'
+
+  // Add a note in col B header about accepted reference formats
+  ws.getCell('B1').note = [
+    'Accepted formats:',
+    '  • John 3:16',
+    '  • Matt 6:34',
+    '  • Ps 23:1',
+    '  • 1 John 4:8',
+    '  • Gen 1:1-3  (verse range)',
+    '',
+    'References are automatically normalised on upload.',
+    'Abbreviations (Matt, Jn, Ps, etc.) are resolved to full book names.',
+  ].join('\n')
 
   // Alternating row shading + reflection column tints
   for (let r = 3; r <= 52; r++) {
     const row = ws.getRow(r)
     row.height = 18
     for (let c = 1; c <= COLUMNS.length; c++) {
-      const cell = row.getCell(c)
-      // Reflection/Live-It-Out columns G(7), H(8), J(10), K(11) get a warm tint
+      const cell     = row.getCell(c)
       const isReflCol = c === 7 || c === 8 || c === 10 || c === 11
       cell.fill = {
         type: 'pattern', pattern: 'solid',
@@ -195,16 +212,22 @@ export async function generateTemplate() {
     ['', ''],
     ['COLUMN GUIDE', ''],
     ['Verse Date *',                          'Required. Format: YYYY-MM-DD (e.g. 2025-01-15)'],
-    ['Verse Reference *',                     'Required. e.g. "John 3:16" or "Psalm 23:1"'],
+    ['Verse Reference *',                     'Required. e.g. "John 3:16" or "Matt 6:34". Abbreviations are accepted and auto-normalised.'],
     ['Age Group *',                           'Required. Select from dropdown on the sheet'],
     ['Active *',                              'Required. "Yes" = published, "No" = hidden'],
     ['ESV — Verse Text',                      'Required. The English Standard Version text'],
     ['NIV — Verse Text',                      'Optional. New International Version text'],
-    ['English Reflection',                    'Optional. ONE reflection for all English translations (ESV + NIV + any future English Bible)'],
-    ['English Live It Out',                   'Optional. Practical steps to apply the verse — shared for all English translations'],
+    ['English Reflection',                    'Optional. ONE reflection for all English translations (ESV + NIV)'],
+    ['English Live It Out',                   'Optional. Practical steps — shared for all English translations'],
     ['Telugu — Verse Text',                   'Optional. Telugu Bible translation text'],
     ['Telugu Reflection',                     'Optional. Reflection written in Telugu'],
     ['Telugu Live It Out',                    'Optional. Practical steps written in Telugu'],
+    ['', ''],
+    ['VERSE REFERENCE FORMAT', ''],
+    ['References must include book, chapter, and verse: "John 3:16"', ''],
+    ['Abbreviations are accepted: Matt, Ps, Gen, Jn, Rev, etc.', ''],
+    ['Verse ranges are accepted: "Romans 8:28-30"', ''],
+    ['References are automatically normalised to full canonical form on upload.', ''],
     ['', ''],
     ['WHY ONE REFLECTION PER LANGUAGE?', ''],
     ['The reflection is a devotional note for the language, not the translation.', ''],
@@ -218,16 +241,17 @@ export async function generateTemplate() {
     ['• Fields marked * are required — rows with missing required fields are skipped.', ''],
     ['• At least ESV Verse Text must be filled for each row.', ''],
     ['• Do not rename, remove, or reorder columns.', ''],
-    ['• Duplicate verse_date + age_group combinations will be reported as errors.', ''],
+    ['• Duplicate verse_date + age_group combinations within the file are reported as errors.', ''],
+    ['• Re-uploading a file updates existing verses rather than creating duplicates.', ''],
   ]
 
   instrData.forEach(([col1, col2]) => {
     const row = instrWs.addRow([col1, col2])
-    const section = ['HOW TO USE', 'COLUMN GUIDE', 'WHY ONE REFLECTION PER LANGUAGE?', 'AGE GROUPS', 'NOTES']
+    const sections = ['HOW TO USE', 'COLUMN GUIDE', 'VERSE REFERENCE FORMAT', 'WHY ONE REFLECTION PER LANGUAGE?', 'AGE GROUPS', 'NOTES']
     if (col1 === instrData[0][0]) {
       row.getCell(1).font = { bold: true, size: 14, color: { argb: `FF${C.headerBg}` } }
       row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD8F3DC' } }
-    } else if (section.includes(col1)) {
+    } else if (sections.includes(col1)) {
       row.getCell(1).font = { bold: true, size: 11, color: { argb: `FF${C.headerBg}` } }
       row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDF7EE' } }
       row.height = 20
@@ -239,13 +263,13 @@ export async function generateTemplate() {
     }
   })
 
-  // ── Generate buffer and upload to Storage ─────────────────────────────────
+  // ── Generate buffer and save ──────────────────────────────────────────────
   const buffer = await wb.xlsx.writeBuffer()
   const blob   = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })
 
-  // Upload to Supabase Storage (upsert so re-generates when translations change)
+  // Upload to Supabase Storage (upsert so re-generates when schema changes)
   try {
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
@@ -273,7 +297,18 @@ export async function generateTemplate() {
 // ── Parsing ───────────────────────────────────────────────────────────────────
 
 /**
- * Parse an uploaded .xlsx file → validated row objects.
+ * Parse an uploaded .xlsx file into validated, normalised row objects.
+ *
+ * Validation rules:
+ *   - verse_date required, YYYY-MM-DD
+ *   - verse_reference required, must be a parseable Bible reference
+ *   - age_group required, must match a known label
+ *   - is_active required, Yes/No
+ *   - ESV verse text required
+ *
+ * Intra-file duplicates on (verse_date, age_group_id) are detected and
+ * reported as errors so they never reach the database.
+ *
  * @param {File} file
  * @returns {{ rows: ParsedRow[], errors: ParseError[] }}
  */
@@ -291,7 +326,7 @@ export async function parseVerseFile(file) {
   const errors = []
 
   ws.eachRow((row, rowNum) => {
-    if (rowNum <= 2) return // skip header + sample
+    if (rowNum <= 2) return // skip header + sample row
 
     const get = (col) => {
       const v = row.getCell(col).value
@@ -301,20 +336,20 @@ export async function parseVerseFile(file) {
       return String(v).trim()
     }
 
-    const rawDate       = get(1)
-    const verseRef      = get(2)
-    const ageGroupRaw   = get(3)
-    const isActiveRaw   = get(4)
-    const esvVerse      = get(5)   // E
-    const nivVerse      = get(6)   // F
-    const enReflection  = get(7)   // G — English reflection (ESV + NIV)
-    const enLiveItOut   = get(8)   // H — English live it out
-    const telVerse      = get(9)   // I
-    const telReflection = get(10)  // J — Telugu reflection
-    const telLiveItOut  = get(11)  // K — Telugu live it out
+    const rawDate        = get(1)  // A — Verse Date
+    const rawVerseRef    = get(2)  // B — Verse Reference
+    const ageGroupRaw    = get(3)  // C — Age Group
+    const isActiveRaw    = get(4)  // D — Active
+    const esvVerse       = get(5)  // E — ESV
+    const nivVerse       = get(6)  // F — NIV
+    const enReflection   = get(7)  // G — English reflection
+    const enLiveItOut    = get(8)  // H — English live-it-out
+    const telVerse       = get(9)  // I — Telugu
+    const telReflection  = get(10) // J — Telugu reflection
+    const telLiveItOut   = get(11) // K — Telugu live-it-out
 
     // Skip fully blank rows
-    if (!rawDate && !verseRef && !ageGroupRaw && !esvVerse) return
+    if (!rawDate && !rawVerseRef && !ageGroupRaw && !esvVerse) return
 
     const rowErrors = []
 
@@ -333,99 +368,237 @@ export async function parseVerseFile(file) {
       }
     }
 
-    // ── Reference ──────────────────────────────────────────────────────────
-    if (!verseRef) rowErrors.push('verse_reference is required')
+    // ── Verse reference ────────────────────────────────────────────────────
+    let verseReference = null
+    if (!rawVerseRef) {
+      rowErrors.push('verse_reference is required')
+    } else {
+      const normalized = normalizeRef(rawVerseRef)
+      if (!normalized) {
+        rowErrors.push(
+          `verse_reference "${rawVerseRef}" is not a recognised Bible reference. ` +
+          'Use: "John 3:16", "Matt 6:34", "Ps 23:1", etc.'
+        )
+      } else {
+        verseReference = normalized // always store in canonical form
+      }
+    }
 
-    // ── Age Group ──────────────────────────────────────────────────────────
+    // ── Age group ──────────────────────────────────────────────────────────
     const ageGroupId = AGE_GROUP_BY_LABEL[ageGroupRaw.toLowerCase()]
-    if (!ageGroupId) rowErrors.push(
-      `age_group "${ageGroupRaw}" not recognised. Use: ${AGE_GROUP_LABELS.join(' | ')}`
-    )
+    if (!ageGroupId) {
+      rowErrors.push(
+        `age_group "${ageGroupRaw}" not recognised. Use: ${AGE_GROUP_LABELS.join(' | ')}`
+      )
+    }
 
     // ── Active ─────────────────────────────────────────────────────────────
     const isActiveStr = isActiveRaw.toLowerCase()
     let isActive = null
     if      (isActiveStr === 'yes') isActive = true
     else if (isActiveStr === 'no')  isActive = false
-    else rowErrors.push(`is_active must be "Yes" or "No" (got "${isActiveRaw}")`)
+    else rowErrors.push(`active must be "Yes" or "No" (got "${isActiveRaw}")`)
 
-    // ── ESV Required ───────────────────────────────────────────────────────
-    if (!esvVerse) rowErrors.push('ESV — Verse Text is required')
+    // ── ESV required ───────────────────────────────────────────────────────
+    if (!esvVerse) rowErrors.push('ESV verse text is required')
 
     if (rowErrors.length > 0) {
-      errors.push({ rowNum, ref: verseRef || `Row ${rowNum}`, errors: rowErrors })
+      errors.push({ rowNum, ref: rawVerseRef || `Row ${rowNum}`, errors: rowErrors })
       return
     }
 
     rows.push({
       rowNum,
       verse_date:      verseDate,
-      verse_reference: verseRef,
+      verse_reference: verseReference,  // normalised canonical form
+      original_ref:    rawVerseRef,     // keep original for display purposes
       age_group_id:    ageGroupId,
       is_active:       isActive,
-      // Verse texts per bible_translation id
+      // Values are plain strings keyed by bible_translation_id
       translations: {
-        1: esvVerse,
-        2: nivVerse,
-        3: telVerse,
+        1: esvVerse  || '',
+        2: nivVerse  || '',
+        3: telVerse  || '',
       },
-      // Per-language content (language_id: 1=English, 2=Telugu)
+      // Per-language content keyed by language_id (1=English, 2=Telugu)
       langContent: {
-        1: { reflection: enReflection,  live_it_out: enLiveItOut  },
-        2: { reflection: telReflection, live_it_out: telLiveItOut },
+        1: { reflection: enReflection  || '', live_it_out: enLiveItOut  || '' },
+        2: { reflection: telReflection || '', live_it_out: telLiveItOut || '' },
       },
     })
   })
 
-  return { rows, errors }
+  // ── Phase 1: detect intra-file duplicates on (verse_date, age_group_id) ──
+  // Two rows targeting the same date+group would collide in the DB unique
+  // constraint; catch them here so the admin gets clear row-level feedback.
+  const seenDateGroup = new Map() // "date|groupId" → first row number
+  const phase1Rows = []
+
+  for (const row of rows) {
+    const key = `${row.verse_date}|${row.age_group_id}`
+    if (seenDateGroup.has(key)) {
+      errors.push({
+        rowNum: row.rowNum,
+        ref:    row.verse_reference,
+        errors: [
+          `Duplicate: same date (${row.verse_date}) and age group as row ${seenDateGroup.get(key)}`,
+        ],
+      })
+    } else {
+      seenDateGroup.set(key, row.rowNum)
+      phase1Rows.push(row)
+    }
+  }
+
+  // ── Phase 2: detect intra-file duplicates on (verse_reference, age_group_id, year) ──
+  // Same verse reference for the same age group in the same year is a business-rule
+  // duplicate, even when the dates differ. Block these before they reach the DB.
+  const seenRefYearGroup = new Map() // "ref|groupId|year" → first row number
+  const finalRows = []
+
+  for (const row of phase1Rows) {
+    const year = row.verse_date ? row.verse_date.substring(0, 4) : ''
+    const key  = `${row.verse_reference}|${row.age_group_id}|${year}`
+    if (seenRefYearGroup.has(key)) {
+      const ag = AGE_GROUPS.find((g) => g.id === row.age_group_id)
+      errors.push({
+        rowNum: row.rowNum,
+        ref:    row.verse_reference,
+        errors: [
+          `Duplicate: "${row.verse_reference}" already scheduled for ${ag?.label ?? `Group ${row.age_group_id}`} in ${year} (first seen on row ${seenRefYearGroup.get(key)})`,
+        ],
+      })
+    } else {
+      seenRefYearGroup.set(key, row.rowNum)
+      finalRows.push(row)
+    }
+  }
+
+  // Sort errors by row number for readable output
+  errors.sort((a, b) => a.rowNum - b.rowNum)
+
+  return { rows: finalRows, errors }
 }
 
 // ── DB Insertion ──────────────────────────────────────────────────────────────
 
 /**
- * Insert parsed verse rows into memory_verses + verse_translations + verse_language_reflections.
- * @param {ParsedRow[]} rows
- * @param {(pct: number) => void} onProgress
+ * Upsert parsed verse rows into the three related tables:
+ *   memory_verses  →  verse_translations  →  verse_language_reflections
+ *
+ * Uses upsert throughout so re-uploading the same file safely updates
+ * existing records rather than failing on unique constraints.
+ *
+ * Conflict keys (verified against live DB constraints):
+ *   memory_verses              → (verse_date, age_group_id)
+ *   verse_translations         → (verse_id, bible_translation_id)
+ *   verse_language_reflections → (verse_id, language_id)
+ *
+ * @param {ParsedRow[]} rows       - output of parseVerseFile()
+ * @param {Function}    onProgress - called with 0–100 percent
  */
 export async function insertVerseRows(rows, onProgress = () => {}) {
-  const result = { inserted: 0, failed: 0, errors: [] }
+  const result = { inserted: 0, updated: 0, failed: 0, errors: [] }
+
+  // ── Pre-fetch: check for existing ref+group+year duplicates in the DB ─────
+  // The upsert conflict key is (verse_date, age_group_id). That means uploading
+  // the same verse reference to a different date for the same group+year would
+  // silently create a business-rule duplicate. We catch that here before upserting.
+  const yearsInFile  = [...new Set(rows.map((r) => r.verse_date.substring(0, 4)))]
+  const groupsInFile = [...new Set(rows.map((r) => r.age_group_id))]
+
+  const existingVerses = []
+  for (const year of yearsInFile) {
+    const { data } = await supabase
+      .from('memory_verses')
+      .select('id, verse_date, age_group_id, verse_reference')
+      .in('age_group_id', groupsInFile)
+      .gte('verse_date', `${year}-01-01`)
+      .lte('verse_date', `${year}-12-31`)
+    if (data) existingVerses.push(...data)
+  }
+
+  // Build lookup: "normalizedRef|age_group_id|year" → { id, verse_date }
+  const existingRefGroupYear = new Map()
+  for (const v of existingVerses) {
+    const nRef = normalizeRef(v.verse_reference) ?? v.verse_reference.trim()
+    const year = v.verse_date.substring(0, 4)
+    const key  = `${nRef}|${v.age_group_id}|${year}`
+    if (!existingRefGroupYear.has(key)) {
+      existingRefGroupYear.set(key, { id: v.id, verse_date: v.verse_date })
+    }
+  }
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]
     onProgress(Math.round(((i + 1) / rows.length) * 100))
 
+    // ── Guard: block ref+group+year duplicates against existing DB data ────
+    const nRef    = normalizeRef(row.verse_reference) ?? row.verse_reference.trim()
+    const rowYear = row.verse_date.substring(0, 4)
+    const refKey  = `${nRef}|${row.age_group_id}|${rowYear}`
+    const clash   = existingRefGroupYear.get(refKey)
+
+    if (clash && clash.verse_date !== row.verse_date) {
+      // Same ref + same group + same year but on a different date → true duplicate
+      const ag = AGE_GROUPS.find((g) => g.id === row.age_group_id)
+      result.failed++
+      result.errors.push(
+        `Row ${row.rowNum} (${row.verse_reference}): ` +
+        `"${nRef}" is already scheduled for ${ag?.label ?? `Group ${row.age_group_id}`} ` +
+        `on ${clash.verse_date} in ${rowYear}. ` +
+        `The same verse reference cannot appear twice for the same age group in the same year.`
+      )
+      continue
+    }
+
     try {
-      // 1. Insert memory_verses (metadata only — text lives in verse_translations)
+      // ── 1. Upsert memory_verses ─────────────────────────────────────────
+      // ON CONFLICT (verse_date, age_group_id) → update reference + active flag
+      const now = new Date().toISOString()
       const { data: verse, error: verseErr } = await supabase
         .from('memory_verses')
-        .insert({
-          verse_date:      row.verse_date,
-          verse_reference: row.verse_reference,
-          age_group_id:    row.age_group_id,
-          is_active:       row.is_active,
-        })
+        .upsert(
+          {
+            verse_date:      row.verse_date,
+            age_group_id:    row.age_group_id,
+            verse_reference: row.verse_reference,
+            is_active:       row.is_active,
+            updated_at:      now,
+          },
+          { onConflict: 'verse_date,age_group_id' }
+        )
         .select('id')
         .single()
 
       if (verseErr) {
         result.failed++
-        result.errors.push(`Row ${row.rowNum} (${row.verse_reference}): ${verseErr.message}`)
+        const msg = verseErr.code === '23505'
+          ? `A verse already exists for ${row.verse_date} / ${row.age_group_id}`
+          : verseErr.message
+        result.errors.push(`Row ${row.rowNum} (${row.verse_reference}): ${msg}`)
         continue
       }
 
-      // 2. Insert verse_translations (verse text only, no reflection here) ──
+      const verseId = verse.id
+
+      // ── 2. Upsert verse_translations ────────────────────────────────────
+      // Only rows with non-empty text; skip empties rather than inserting blanks.
+      // ON CONFLICT (verse_id, bible_translation_id) → update verse_text
       const translationRows = Object.entries(row.translations)
         .filter(([, text]) => text?.trim())
         .map(([tid, text]) => ({
-          verse_id:             verse.id,
+          verse_id:             verseId,
           bible_translation_id: Number(tid),
           verse_text:           text.trim(),
+          updated_at:           now,
         }))
 
       if (translationRows.length > 0) {
         const { error: transErr } = await supabase
           .from('verse_translations')
-          .insert(translationRows)
+          .upsert(translationRows, { onConflict: 'verse_id,bible_translation_id' })
+
         if (transErr) {
           result.failed++
           result.errors.push(
@@ -435,23 +608,26 @@ export async function insertVerseRows(rows, onProgress = () => {}) {
         }
       }
 
-      // 3. Insert verse_language_reflections (one per language) ─────────────
+      // ── 3. Upsert verse_language_reflections ────────────────────────────
+      // One row per language that has reflection or live-it-out content.
+      // ON CONFLICT (verse_id, language_id) → update reflection + live_it_out
       const reflectionRows = Object.entries(row.langContent)
         .filter(([, c]) => c.reflection?.trim() || c.live_it_out?.trim())
         .map(([langId, c]) => ({
-          verse_id:    verse.id,
+          verse_id:    verseId,
           language_id: Number(langId),
           reflection:  c.reflection?.trim()  || null,
           live_it_out: c.live_it_out?.trim() || null,
-          updated_at:  new Date().toISOString(),
+          updated_at:  now,
         }))
 
       if (reflectionRows.length > 0) {
         const { error: reflErr } = await supabase
           .from('verse_language_reflections')
-          .insert(reflectionRows)
+          .upsert(reflectionRows, { onConflict: 'verse_id,language_id' })
+
         if (reflErr) {
-          // Non-fatal: log but don't fail the whole verse
+          // Non-fatal: reflections are optional; log but don't fail the verse
           console.warn(`Row ${row.rowNum} reflections: ${reflErr.message}`)
         }
       }

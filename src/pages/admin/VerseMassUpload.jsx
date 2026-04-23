@@ -140,8 +140,10 @@ export default function VerseMassUpload() {
               'Age Group & Active status dropdowns built in',
               'Date picker enabled for Verse Date column',
               'Columns for ESV (required), NIV & Telugu (optional)',
-              'Instructions sheet included',
-              'Saved to your Supabase Storage for team access',
+              'Verse references auto-normalised on upload (Matt → Matthew)',
+              'Duplicate rows detected before they reach the database',
+              'Re-uploading updates existing verses safely (no duplicates created)',
+              'Instructions sheet with accepted reference formats included',
             ].map((f) => (
               <li key={f} className="flex items-start gap-2">
                 <CheckCircle2 size={15} className="mt-0.5 flex-shrink-0 text-green-600" />
@@ -270,14 +272,14 @@ export default function VerseMassUpload() {
             <SectionCard
               step="3"
               title={`Preview — ${validRows.length} Valid Row${validRows.length > 1 ? 's' : ''}`}
-              subtitle="Review before uploading"
+              subtitle="Review before uploading. References have been normalised to canonical form."
               accent="green"
             >
               <div className="overflow-x-auto -mx-1 rounded-xl border border-gray-100">
                 <table className="w-full text-xs">
                   <thead>
                     <tr style={{ backgroundColor: 'rgba(27,67,50,0.06)' }}>
-                      {['#', 'Date', 'Reference', 'Age Group', 'Active', 'Translations'].map((h) => (
+                      {['Row', 'Date', 'Reference', 'Age Group', 'Active', 'Translations', 'Content'].map((h) => (
                         <th
                           key={h}
                           className="text-left px-3 py-2.5 font-semibold uppercase tracking-wide text-gray-500"
@@ -289,33 +291,63 @@ export default function VerseMassUpload() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {validRows.map((row, i) => {
+                    {validRows.map((row) => {
                       const group = AGE_GROUP_BY_ID[row.age_group_id]
+
+                      // translations values are plain strings keyed by bible_translation_id
                       const transCodes = Object.entries(row.translations)
-                        .filter(([, t]) => t.verse_text?.trim())
-                        .map(([tid]) => ({ 1: 'ESV', 2: 'NIV', 3: 'TEL' }[tid])
-                        )
+                        .filter(([, text]) => text?.trim())
+                        .map(([tid]) => ({ 1: 'ESV', 2: 'NIV', 3: 'TEL' }[Number(tid)]))
+                        .filter(Boolean)
+
+                      // reflection / live-it-out presence badges
+                      const hasEnContent = row.langContent[1]?.reflection?.trim() || row.langContent[1]?.live_it_out?.trim()
+                      const hasTeContent = row.langContent[2]?.reflection?.trim() || row.langContent[2]?.live_it_out?.trim()
+
+                      // Was the reference normalised? (original_ref differs from stored verse_reference)
+                      const wasNormalised = row.original_ref && row.original_ref !== row.verse_reference
+
                       return (
                         <tr key={row.rowNum} className="hover:bg-gray-50/60">
-                          <td className="px-3 py-2 text-gray-400">{i + 1}</td>
+                          {/* Row number from Excel */}
+                          <td className="px-3 py-2 text-gray-400 tabular-nums">{row.rowNum}</td>
+
+                          {/* Date */}
                           <td className="px-3 py-2 text-gray-600 whitespace-nowrap font-mono">{row.verse_date}</td>
-                          <td className="px-3 py-2 font-semibold text-gray-800">{row.verse_reference}</td>
+
+                          {/* Reference — show original + normalised if they differ */}
+                          <td className="px-3 py-2">
+                            <span className="font-semibold text-gray-800">{row.verse_reference}</span>
+                            {wasNormalised && (
+                              <div className="text-amber-600 mt-0.5" style={{ fontSize: '0.62rem' }}>
+                                was: {row.original_ref}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Age group */}
                           <td className="px-3 py-2">
                             <span
-                              className="inline-block px-2 py-0.5 rounded-full text-white font-medium"
+                              className="inline-block px-2 py-0.5 rounded-full text-white font-medium whitespace-nowrap"
                               style={{ backgroundColor: group?.color, fontSize: '0.65rem' }}
                             >
                               {group?.label}
                             </span>
                           </td>
+
+                          {/* Active */}
                           <td className="px-3 py-2">
                             <span className={`font-medium ${row.is_active ? 'text-green-700' : 'text-gray-400'}`}>
                               {row.is_active ? 'Yes' : 'No'}
                             </span>
                           </td>
+
+                          {/* Translation codes */}
                           <td className="px-3 py-2">
                             <div className="flex flex-wrap gap-1">
-                              {transCodes.map((code) => (
+                              {transCodes.length === 0 ? (
+                                <span className="text-gray-300">—</span>
+                              ) : transCodes.map((code) => (
                                 <span
                                   key={code}
                                   className="px-1.5 py-0.5 rounded font-bold"
@@ -329,6 +361,33 @@ export default function VerseMassUpload() {
                                   {code}
                                 </span>
                               ))}
+                            </div>
+                          </td>
+
+                          {/* Reflection content badges */}
+                          <td className="px-3 py-2">
+                            <div className="flex flex-wrap gap-1">
+                              {hasEnContent && (
+                                <span
+                                  className="px-1.5 py-0.5 rounded font-bold"
+                                  style={{ backgroundColor: 'rgba(160,82,45,0.12)', color: '#7C3D12', fontSize: '0.62rem' }}
+                                  title="English reflection/live-it-out"
+                                >
+                                  EN refl
+                                </span>
+                              )}
+                              {hasTeContent && (
+                                <span
+                                  className="px-1.5 py-0.5 rounded font-bold"
+                                  style={{ backgroundColor: 'rgba(92,61,17,0.12)', color: '#5C3D11', fontSize: '0.62rem' }}
+                                  title="Telugu reflection/live-it-out"
+                                >
+                                  TE refl
+                                </span>
+                              )}
+                              {!hasEnContent && !hasTeContent && (
+                                <span className="text-gray-300">—</span>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -399,8 +458,11 @@ export default function VerseMassUpload() {
               Upload Complete
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {uploadResult.inserted} verse{uploadResult.inserted > 1 ? 's' : ''} added successfully
+              {uploadResult.inserted} verse{uploadResult.inserted !== 1 ? 's' : ''} saved
               {uploadResult.failed > 0 && ` · ${uploadResult.failed} failed`}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Existing verses with matching date + age group were updated in place.
             </p>
           </div>
 

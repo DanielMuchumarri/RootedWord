@@ -19,6 +19,7 @@ import VerseMassUpload from './pages/admin/VerseMassUpload'
 import HeroVerseList from './pages/admin/HeroVerseList'
 import HeroVerseForm from './pages/admin/HeroVerseForm'
 import Analytics from './pages/admin/Analytics'
+import DuplicateVerses from './pages/admin/DuplicateVerses'
 
 export default function App() {
   return (
@@ -62,6 +63,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AdminLayout><VerseMassUpload /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/verses/duplicates"
+            element={
+              <ProtectedRoute>
+                <AdminLayout><DuplicateVerses /></AdminLayout>
               </ProtectedRoute>
             }
           />
