@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import LanguageVersionSelector from '../components/LanguageVersionSelector'
 
 export default function PublicLayout({ children }) {
   return (
@@ -12,6 +13,7 @@ export default function PublicLayout({ children }) {
               <p className="text-xs text-green-200 hidden sm:block leading-none">Plant the Word. Grow in Faith.</p>
             </div>
           </Link>
+          <LanguageVersionSelector />
         </div>
       </header>
 

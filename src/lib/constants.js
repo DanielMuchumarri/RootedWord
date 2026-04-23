@@ -39,7 +39,6 @@ export const AGE_GROUP_BY_ID = Object.fromEntries(
   AGE_GROUPS.map((g) => [g.id, g])
 )
 
-export const BIBLE_TRANSLATIONS = ['NIV', 'ESV', 'KJV', 'NLT', 'NASB', 'CSB', 'MSG']
 
 export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',

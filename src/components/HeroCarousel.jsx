@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useUserPreferences } from '../contexts/UserPreferencesContext'
 
 /* Ken-Burns pan/zoom variants — one per slide slot */
 const KB = [
@@ -18,15 +19,43 @@ export default function HeroCarousel() {
   const [transitioning, setTransitioning] = useState(false)
   const timerRef                      = useRef(null)
 
-  /* ── Load slides from Supabase ─────────────────────── */
+  const { selectedTranslation, defaultTranslation } = useUserPreferences()
+
+  /* ── Load slides from Supabase (with all translations) ── */
   useEffect(() => {
     supabase
       .from('hero_verses')
-      .select('*')
+      .select(`
+        *,
+        hero_verse_translations(
+          verse_text, bible_translation_id,
+          bible_translations(id, code, languages(code, name, native_name))
+        )
+      `)
       .eq('is_active', true)
       .order('sort_order')
       .then(({ data }) => setSlides(data || []))
   }, [])
+
+  /* ── Resolve display text for a slide ───────────────── */
+  function resolveText(slide) {
+    const contents = slide.hero_verse_translations || []
+    const selectedMatch = selectedTranslation
+      ? contents.find((c) => c.bible_translation_id === selectedTranslation.id)
+      : null
+    const defaultMatch = defaultTranslation
+      ? contents.find((c) => c.bible_translation_id === defaultTranslation.id)
+      : null
+    const match = selectedMatch || defaultMatch
+    return {
+      text:             match?.verse_text ?? slide.verse_text ?? '',
+      translationCode:  match?.bible_translations?.code ?? slide.bible_translation ?? 'ESV',
+      hasSelectedTrans: Boolean(selectedMatch),
+      isNonEnglish:     selectedTranslation
+                          ? selectedTranslation.languages?.code !== 'en'
+                          : false,
+    }
+  }
 
   /* ── Navigation ─────────────────────────────────────── */
   const goTo = useCallback(
@@ -73,6 +102,9 @@ export default function HeroCarousel() {
   }
 
   const slide = slides[current]
+  const { text: slideText, translationCode: slideTransCode, hasSelectedTrans, isNonEnglish } = resolveText(slide)
+  // Key includes translation id so the card re-animates on language/translation change
+  const cardKey = `${current}-${selectedTranslation?.id ?? 'default'}`
 
   return (
     <div
@@ -130,7 +162,7 @@ export default function HeroCarousel() {
       <div className="absolute inset-0 z-10 flex items-center justify-center px-5 sm:px-10"
         style={{ paddingTop: 40, paddingBottom: 64 }}>
         <div
-          key={current}
+          key={cardKey}
           className="animate-fade-in-up w-full max-w-2xl rounded-2xl sm:rounded-3xl px-7 sm:px-10 py-8 sm:py-10"
           style={{
             background: 'rgba(8, 28, 18, 0.62)',
@@ -140,6 +172,24 @@ export default function HeroCarousel() {
             boxShadow: '0 8px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10)',
           }}
         >
+          {/* Language badge — shown when a non-English translation is active */}
+          {isNonEnglish && hasSelectedTrans && (
+            <div className="flex items-center gap-2 mb-3">
+              <span
+                className="text-xs font-bold px-2.5 py-1 rounded-full"
+                style={{
+                  background: 'rgba(212,160,23,0.22)',
+                  color: '#F5C842',
+                  border: '1px solid rgba(212,160,23,0.35)',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                {selectedTranslation?.languages?.native_name ||
+                  selectedTranslation?.languages?.name || ''}
+              </span>
+            </div>
+          )}
+
           {/* Decorative quote mark */}
           <div
             className="font-serif-display font-bold leading-none mb-3 select-none"
@@ -165,7 +215,7 @@ export default function HeroCarousel() {
               letterSpacing: '0.01em',
             }}
           >
-            {slide.verse_text}
+            {slideText}
           </blockquote>
 
           {/* Divider */}
@@ -188,7 +238,7 @@ export default function HeroCarousel() {
                 letterSpacing: '0.12em',
               }}
             >
-              {slide.bible_translation}
+              {slideTransCode}
             </span>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router-dom'
 import { MONTHS, AGE_GROUP_BY_ID } from '../lib/constants'
 import { useMonthVerses } from '../hooks/useVerses'
+import { useUserPreferences } from '../contexts/UserPreferencesContext'
 import AgeGroupTabs from '../components/AgeGroupTabs'
 import MonthPicker from '../components/MonthPicker'
 import CalendarGrid from '../components/CalendarGrid'
@@ -20,7 +21,12 @@ export default function CalendarHome() {
   function setMonth(m)       { setSearchParams({ group: ageGroupId, year, month: m }, { replace: true }) }
   function setAgeGroupId(g)  { setSearchParams({ group: g, year, month }, { replace: true }) }
 
-  const { verses, loading } = useMonthVerses(year, month, ageGroupId)
+  const { selectedTranslation, defaultTranslation } = useUserPreferences()
+  const { verses, loading } = useMonthVerses(
+    year, month, ageGroupId,
+    selectedTranslation?.id ?? null,
+    defaultTranslation?.id ?? null
+  )
   const group = AGE_GROUP_BY_ID[ageGroupId]
 
   function handleMonthChange(y, m) {

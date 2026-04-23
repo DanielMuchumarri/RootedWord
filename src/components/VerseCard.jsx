@@ -68,7 +68,7 @@ export default function VerseCard({ date, verse, ageGroupId }) {
             {verse.verse_reference}
           </p>
           <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed font-serif-display italic">
-            {verse.verse_text}
+            {verse.display_text || verse.verse_text}
           </p>
         </div>
       ) : (

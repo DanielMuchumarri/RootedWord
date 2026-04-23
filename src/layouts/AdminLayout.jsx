@@ -1,15 +1,16 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
-  LayoutDashboard, BookOpen, BarChart2, LogOut, Home, X, Menu,
+  LayoutDashboard, BookOpen, BarChart2, LogOut, Home, X, Menu, Image,
 } from 'lucide-react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 
 const nav = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/admin/verses', label: 'Verses', icon: BookOpen },
-  { to: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
+  { to: '/admin',             label: 'Dashboard',   icon: LayoutDashboard, end: true },
+  { to: '/admin/verses',      label: 'Verses',       icon: BookOpen },
+  { to: '/admin/hero-verses', label: 'Hero Slides',  icon: Image },
+  { to: '/admin/analytics',   label: 'Analytics',    icon: BarChart2 },
 ]
 
 export default function AdminLayout({ children }) {

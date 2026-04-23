@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { AGE_GROUPS, AGE_GROUP_BY_ID, MONTHS } from '../../lib/constants'
 import { format, parseISO } from 'date-fns'
-import { PlusCircle, Edit2, Trash2, Search, Eye } from 'lucide-react'
+import { PlusCircle, Edit2, Trash2, Search, Eye, Download, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { generateTemplate } from '../../lib/verseUpload'
 
 const PAGE_SIZE = 20
 
 export default function VerseList() {
-  const [verses, setVerses] = useState([])
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+  const [verses, setVerses]              = useState([])
+  const [loading, setLoading]            = useState(true)
+  const [templateLoading, setTplLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [filterGroup, setFilterGroup] = useState('')
   const [filterYear, setFilterYear] = useState('')
@@ -30,7 +33,13 @@ export default function VerseList() {
     setLoading(true)
     let query = supabase
       .from('memory_verses')
-      .select('id, verse_date, verse_reference, age_group_id, bible_translation, is_active, created_at', { count: 'exact' })
+      .select(`
+        id, verse_date, verse_reference, age_group_id, is_active, created_at,
+        verse_translations(
+          bible_translation_id,
+          bible_translations(code, languages(code, name))
+        )
+      `, { count: 'exact' })
       .order('verse_date', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
@@ -54,6 +63,18 @@ export default function VerseList() {
     setLoading(false)
   }
 
+  async function handleDownloadTemplate() {
+    setTplLoading(true)
+    try {
+      await generateTemplate()
+      toast.success('Template downloaded!')
+    } catch (err) {
+      toast.error(`Template generation failed: ${err.message}`)
+    } finally {
+      setTplLoading(false)
+    }
+  }
+
   async function handleDelete(id) {
     const { error } = await supabase.from('memory_verses').delete().eq('id', id)
     if (error) {
@@ -70,18 +91,53 @@ export default function VerseList() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-dark)' }}>Verses</h1>
           <p className="text-sm text-gray-500">{total} total verses</p>
         </div>
-        <Link
-          to="/admin/verses/new"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold"
-          style={{ backgroundColor: 'var(--green-mid)' }}
-        >
-          <PlusCircle size={16} /> Add Verse
-        </Link>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Download Template */}
+          <button
+            onClick={handleDownloadTemplate}
+            disabled={templateLoading}
+            title="Download Excel upload template"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-gray-200
+                       text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50
+                       transition-colors bg-white shadow-sm"
+          >
+            <Download size={15} style={{ color: 'var(--green-mid)' }} />
+            {templateLoading ? 'Generating…' : 'Get Template'}
+          </button>
+
+          {/* Mass Upload */}
+          <button
+            onClick={() => navigate('/admin/verses/upload')}
+            title="Mass upload verses from Excel"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm
+                       font-semibold transition-colors shadow-sm"
+            style={{
+              borderColor: 'rgba(27,67,50,0.35)',
+              color: 'var(--green-deep)',
+              backgroundColor: 'rgba(27,67,50,0.06)',
+            }}
+          >
+            <Upload size={15} />
+            Mass Upload
+          </button>
+
+          {/* Add single verse */}
+          <Link
+            to="/admin/verses/new"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold
+                       hover:opacity-90 transition-opacity shadow-sm"
+            style={{ backgroundColor: 'var(--green-mid)' }}
+          >
+            <PlusCircle size={16} /> Add Verse
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -169,7 +225,34 @@ export default function VerseList() {
                           {group?.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{v.bible_translation}</td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {(v.verse_translations || []).map((vt) => {
+                            const code = vt.bible_translations?.code
+                            const langCode = vt.bible_translations?.languages?.code
+                            const isEnglish = langCode === 'en'
+                            return (
+                              <span
+                                key={vt.bible_translation_id}
+                                className="text-xs px-1.5 py-0.5 rounded font-semibold"
+                                style={{
+                                  backgroundColor: isEnglish
+                                    ? 'rgba(27,67,50,0.08)'
+                                    : 'rgba(212,160,23,0.15)',
+                                  color: isEnglish
+                                    ? 'var(--green-deep)'
+                                    : '#92600A',
+                                }}
+                              >
+                                {code}
+                              </span>
+                            )
+                          })}
+                          {(v.verse_translations || []).length === 0 && (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           v.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'

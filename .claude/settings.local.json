@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Supabase-rootedword__apply_migration",
+      "Bash(npm create *)",
+      "Bash(npx create-vite@latest *)",
+      "Bash(npm install *)",
+      "mcp__Supabase-rootedword__execute_sql",
+      "Bash(npx vite *)"
+    ]
+  }
+}
