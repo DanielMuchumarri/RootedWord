@@ -1,8 +1,13 @@
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 
 export default function NotFound() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <Helmet>
+        <title>Page Not Found — RootedWord</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className="text-6xl mb-4">🍃</div>
       <h1 className="font-serif-display text-4xl font-bold mb-2" style={{ color: 'var(--green-deep)' }}>
         404

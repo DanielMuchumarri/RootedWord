@@ -114,6 +114,28 @@ export default function HeroVerseForm() {
       return
     }
 
+    // Validate: background image URL must be HTTPS (if provided)
+    const rawImageUrl = form.background_image_url?.trim()
+    if (rawImageUrl) {
+      try {
+        const parsed = new URL(rawImageUrl)
+        if (parsed.protocol !== 'https:') throw new Error('HTTPS required')
+      } catch {
+        toast.error('Background image URL must be a valid https:// URL.')
+        setSaving(false)
+        return
+      }
+    }
+
+    // Validate: overlay_color must be rgba(), rgb(), or a hex color
+    const colorVal = form.overlay_color?.trim() || ''
+    const validColor = /^(rgba?\([^)]+\)|#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}))$/.test(colorVal)
+    if (colorVal && !validColor) {
+      toast.error('Overlay color must be a valid CSS color, e.g. rgba(27, 67, 50, 0.72) or #1B4332.')
+      setSaving(false)
+      return
+    }
+
     // 1. Upsert hero_verses (keep verse_text for backward compatibility)
     const payload = {
       verse_reference: form.verse_reference.trim(),

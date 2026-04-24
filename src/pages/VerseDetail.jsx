@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { supabase } from '../lib/supabase'
 import { AGE_GROUP_BY_ID } from '../lib/constants'
 import { format, parseISO } from 'date-fns'
@@ -176,11 +177,43 @@ export default function VerseDetail() {
     )
   }
 
-  const group = AGE_GROUP_BY_ID[verse.age_group_id]
+  const group   = AGE_GROUP_BY_ID[verse.age_group_id]
   const dateObj = parseISO(verse.verse_date)
+
+  // SEO helpers
+  const formattedDate = format(dateObj, 'MMMM d, yyyy')
+  const snippet = displayReflection
+    ? displayReflection.slice(0, 140).trimEnd() + (displayReflection.length > 140 ? '…' : '')
+    : displayText.slice(0, 140).trimEnd() + (displayText.length > 140 ? '…' : '')
+  const verseTitle = `${verse.verse_reference} — ${formattedDate} | RootedWord`
+  const verseDesc  = `Memorize ${verse.verse_reference} with reflection and application. ${snippet}`
+  const verseUrl   = `https://rootedword.com/verse/${verse.id}`
+
+  const ldJson = {
+    '@context':     'https://schema.org',
+    '@type':        'Article',
+    headline:       verse.verse_reference,
+    description:    verseDesc,
+    datePublished:  verse.verse_date,
+    author:    { '@type': 'Organization', name: 'RootedWord' },
+    publisher: { '@type': 'Organization', name: 'RootedWord', url: 'https://rootedword.com' },
+    url:            verseUrl,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': verseUrl },
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 animate-fade-in-up">
+      <Helmet>
+        <title>{verseTitle}</title>
+        <meta name="description"          content={verseDesc} />
+        <meta property="og:title"         content={`${verse.verse_reference} | RootedWord Memory Verse`} />
+        <meta property="og:description"   content={verseDesc} />
+        <meta property="og:url"           content={verseUrl} />
+        <meta property="og:type"          content="article" />
+        <meta property="article:published_time" content={verse.verse_date} />
+        <link rel="canonical"             href={verseUrl} />
+        <script type="application/ld+json">{JSON.stringify(ldJson)}</script>
+      </Helmet>
       {/* Back button */}
       <Link
         to={calendarHref}

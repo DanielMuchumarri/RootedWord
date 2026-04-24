@@ -50,6 +50,11 @@ export default function VerseMassUpload() {
       toast.error('Please upload an Excel file (.xlsx or .xls)')
       return
     }
+    const MAX_SIZE_MB = 5
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast.error(`File is too large. Maximum allowed size is ${MAX_SIZE_MB} MB.`)
+      return
+    }
     setFileName(file.name)
     setPhase(PHASES.PARSING)
     try {

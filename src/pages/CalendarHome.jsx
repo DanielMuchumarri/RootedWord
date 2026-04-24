@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { MONTHS, AGE_GROUP_BY_ID } from '../lib/constants'
 import { useMonthVerses } from '../hooks/useVerses'
 import { useUserPreferences } from '../contexts/UserPreferencesContext'
@@ -33,8 +34,21 @@ export default function CalendarHome() {
     setSearchParams({ group: ageGroupId, year: y, month: m }, { replace: true })
   }
 
+  const monthName = MONTHS[month - 1]
+  const pageTitle = `Bible Memory Verses — ${monthName} ${year} | RootedWord`
+  const pageDesc  = `Daily Bible memory verses for ${monthName} ${year}. Scripture structured for kids (Little Roots), youth (Growing Roots), and adults (Deep Roots).`
+
   return (
     <div>
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
+        <meta property="og:title"       content={pageTitle} />
+        <meta property="og:description" content={pageDesc} />
+        <meta property="og:url"         content="https://rootedword.com/" />
+        <link rel="canonical"           href="https://rootedword.com/" />
+      </Helmet>
+
       {/* Hero Carousel */}
       <HeroCarousel />
 
