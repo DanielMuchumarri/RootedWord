@@ -398,12 +398,31 @@ export default function VerseDetail() {
               </span>
             )}
           </div>
-          <div
-            className="text-gray-700 leading-relaxed whitespace-pre-line"
-            style={{ fontSize: group.id === 1 ? '1.05rem' : '1rem' }}
-          >
-            {displayLiveItOut}
-          </div>
+          {(() => {
+            // Split "1. text 2. text 3. text" into individual numbered points
+            const parts = displayLiveItOut.split(/(?=\d+\.\s)/).map((s) => s.trim()).filter(Boolean)
+            const isList = parts.length > 1 && parts.every((p) => /^\d+\./.test(p))
+            const fontSize = { fontSize: group.id === 1 ? '1.05rem' : '1rem' }
+            if (isList) {
+              return (
+                <ol className="space-y-2 list-none" style={fontSize}>
+                  {parts.map((item, i) => (
+                    <li key={i} className="flex gap-2 text-gray-700 leading-relaxed">
+                      <span className="font-semibold shrink-0" style={{ color: '#92600A' }}>
+                        {i + 1}.
+                      </span>
+                      <span>{item.replace(/^\d+\.\s*/, '')}</span>
+                    </li>
+                  ))}
+                </ol>
+              )
+            }
+            return (
+              <div className="text-gray-700 leading-relaxed whitespace-pre-line" style={fontSize}>
+                {displayLiveItOut}
+              </div>
+            )
+          })()}
         </div>
       )}
 
