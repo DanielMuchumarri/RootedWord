@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /admin/
 
-Sitemap: https://rootedword.com/sitemap.xml
+Sitemap: https://rootedgodsword.com/sitemap.xml

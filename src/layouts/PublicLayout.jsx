@@ -9,7 +9,7 @@ export default function PublicLayout({ children }) {
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl">🌿</span>
             <div>
-              <span className="font-serif-display text-xl font-bold text-white tracking-wide">RootedWord</span>
+              <span className="font-serif-display text-xl font-bold text-white tracking-wide">Rooted God's Word</span>
               <p className="text-xs text-green-200 hidden sm:block leading-none">Plant the Word. Grow in Faith.</p>
             </div>
           </Link>
@@ -25,7 +25,7 @@ export default function PublicLayout({ children }) {
             "Let the word of Christ dwell in you richly" — Colossians 3:16
           </p>
           <p className="text-green-400 text-xs">
-            © {new Date().getFullYear()} RootedWord · A Faith-Based Bible Memory App
+            © {new Date().getFullYear()} Rooted God's Word · A Faith-Based Bible Memory App
           </p>
         </div>
       </footer>

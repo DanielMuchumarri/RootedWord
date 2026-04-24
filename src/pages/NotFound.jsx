@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
       <Helmet>
-        <title>Page Not Found — RootedWord</title>
+        <title>Page Not Found — Rooted God's Word</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
       <div className="text-6xl mb-4">🍃</div>

@@ -185,9 +185,9 @@ export default function VerseDetail() {
   const snippet = displayReflection
     ? displayReflection.slice(0, 140).trimEnd() + (displayReflection.length > 140 ? '…' : '')
     : displayText.slice(0, 140).trimEnd() + (displayText.length > 140 ? '…' : '')
-  const verseTitle = `${verse.verse_reference} — ${formattedDate} | RootedWord`
+  const verseTitle = `${verse.verse_reference} — ${formattedDate} | Rooted God's Word`
   const verseDesc  = `Memorize ${verse.verse_reference} with reflection and application. ${snippet}`
-  const verseUrl   = `https://rootedword.com/verse/${verse.id}`
+  const verseUrl   = `https://rootedgodsword.com/verse/${verse.id}`
 
   const ldJson = {
     '@context':     'https://schema.org',
@@ -195,8 +195,8 @@ export default function VerseDetail() {
     headline:       verse.verse_reference,
     description:    verseDesc,
     datePublished:  verse.verse_date,
-    author:    { '@type': 'Organization', name: 'RootedWord' },
-    publisher: { '@type': 'Organization', name: 'RootedWord', url: 'https://rootedword.com' },
+    author:    { '@type': 'Organization', name: "Rooted God's Word" },
+    publisher: { '@type': 'Organization', name: "Rooted God's Word", url: 'https://rootedgodsword.com' },
     url:            verseUrl,
     mainEntityOfPage: { '@type': 'WebPage', '@id': verseUrl },
   }
@@ -206,7 +206,7 @@ export default function VerseDetail() {
       <Helmet>
         <title>{verseTitle}</title>
         <meta name="description"          content={verseDesc} />
-        <meta property="og:title"         content={`${verse.verse_reference} | RootedWord Memory Verse`} />
+        <meta property="og:title"         content={`${verse.verse_reference} | Rooted God's Word Memory Verse`} />
         <meta property="og:description"   content={verseDesc} />
         <meta property="og:url"           content={verseUrl} />
         <meta property="og:type"          content="article" />

@@ -181,7 +181,7 @@ export default function DuplicateVerses() {
       const sorted      = [...exportVerses].sort((a, b) => a.verse_date.localeCompare(b.verse_date))
 
       const wb  = new ExcelJS.Workbook()
-      wb.creator = 'RootedWord Admin'
+      wb.creator = "Rooted God's Word Admin"
       wb.created = new Date()
 
       const ws = wb.addWorksheet('All Verses', { views: [{ state: 'frozen', ySplit: 3 }] })
@@ -194,7 +194,7 @@ export default function DuplicateVerses() {
       ]
 
       // Row 1 — report title
-      const titleRow = ws.addRow([`RootedWord — All Verse References · ${groupLabel} · ${dateStamp}`, '', '', '', ''])
+      const titleRow = ws.addRow([`Rooted God's Word — All Verse References · ${groupLabel} · ${dateStamp}`, '', '', '', ''])
       ws.mergeCells('A1:E1')
       titleRow.height = 26
       titleRow.getCell(1).font      = { bold: true, size: 12, color: { argb: `FF${GREEN_DEEP}` } }
@@ -252,7 +252,7 @@ export default function DuplicateVerses() {
       ws.autoFilter = { from: 'A3', to: 'E3' }
 
       const buffer = await wb.xlsx.writeBuffer()
-      triggerDownload(buffer, `RootedWord_All-Verses_${groupLabel}_${dateStamp}.xlsx`)
+      triggerDownload(buffer, `RootedGodsWord_All-Verses_${groupLabel}_${dateStamp}.xlsx`)
       toast.success(`Downloaded ${sorted.length} verses`)
     } catch (err) {
       toast.error('Download failed: ' + err.message)
@@ -274,7 +274,7 @@ export default function DuplicateVerses() {
         : allGroups.filter((g) => g.verses.some((v) => v.age_group_id === parseInt(exportGroup)))
 
       const wb  = new ExcelJS.Workbook()
-      wb.creator = 'RootedWord Admin'
+      wb.creator = "Rooted God's Word Admin"
       wb.created = new Date()
 
       const ws = wb.addWorksheet('Duplicate Verses', { views: [{ state: 'frozen', ySplit: 3 }] })
@@ -290,7 +290,7 @@ export default function DuplicateVerses() {
 
       // Row 1 — title
       const totalEntries = exportDupVerses.length
-      const titleRow = ws.addRow([`RootedWord — Duplicate Verse References · ${groupLabel} · ${dateStamp}`, '', '', '', '', '', ''])
+      const titleRow = ws.addRow([`Rooted God's Word — Duplicate Verse References · ${groupLabel} · ${dateStamp}`, '', '', '', '', '', ''])
       ws.mergeCells('A1:G1')
       titleRow.height = 26
       titleRow.getCell(1).font      = { bold: true, size: 12, color: { argb: `FF${GREEN_DEEP}` } }
@@ -369,7 +369,7 @@ export default function DuplicateVerses() {
       ws.autoFilter = { from: 'A3', to: 'G3' }
 
       const buffer = await wb.xlsx.writeBuffer()
-      triggerDownload(buffer, `RootedWord_Duplicate-Verses_${groupLabel}_${dateStamp}.xlsx`)
+      triggerDownload(buffer, `RootedGodsWord_Duplicate-Verses_${groupLabel}_${dateStamp}.xlsx`)
       toast.success(`Downloaded ${totalEntries} duplicate entries across ${relevantGroups.length} groups`)
     } catch (err) {
       toast.error('Download failed: ' + err.message)

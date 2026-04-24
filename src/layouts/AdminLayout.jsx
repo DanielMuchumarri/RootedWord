@@ -31,7 +31,7 @@ export default function AdminLayout({ children }) {
         <div className="flex items-center gap-2">
           <span className="text-2xl">🌿</span>
           <div>
-            <p className="font-serif-display font-bold text-white text-lg leading-none">RootedWord</p>
+            <p className="font-serif-display font-bold text-white text-lg leading-none">Rooted God's Word</p>
             <p className="text-green-300 text-xs mt-0.5">Admin Portal</p>
           </div>
         </div>

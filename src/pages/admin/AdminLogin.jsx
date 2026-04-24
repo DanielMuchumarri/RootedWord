@@ -36,7 +36,7 @@ export default function AdminLogin() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">🌿</div>
-          <h1 className="font-serif-display text-3xl font-bold text-white">RootedWord</h1>
+          <h1 className="font-serif-display text-3xl font-bold text-white">Rooted God's Word</h1>
           <p className="text-green-300 text-sm mt-1">Admin Portal</p>
         </div>
 
@@ -85,7 +85,7 @@ export default function AdminLogin() {
         <p className="text-center text-green-400 text-xs mt-6">
           Public site →{' '}
           <a href="/" className="underline hover:text-white transition-colors">
-            RootedWord Calendar
+            Rooted God's Word Calendar
           </a>
         </p>
       </div>

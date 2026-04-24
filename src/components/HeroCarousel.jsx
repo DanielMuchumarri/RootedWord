@@ -94,7 +94,7 @@ export default function HeroCarousel() {
         style={{ height: 520, background: 'linear-gradient(135deg,#1B4332 0%,#2D6A4F 60%,#40916C 100%)' }}>
         <div className="text-center">
           <span className="text-4xl">🌿</span>
-          <p className="font-serif-display text-3xl font-bold text-white mt-3">RootedWord</p>
+          <p className="font-serif-display text-3xl font-bold text-white mt-3">Rooted God's Word</p>
           <p className="text-green-200 italic font-serif-display mt-1">Plant the Word. Grow in Faith.</p>
         </div>
       </div>

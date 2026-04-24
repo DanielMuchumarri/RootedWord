@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // ── Config ─────────────────────────────────────────────────────────────────
-const BASE_URL       = process.env.SITE_URL || 'https://rootedword.com'
+const BASE_URL       = process.env.SITE_URL || 'https://rootedgodsword.com'
 const SUPABASE_URL   = process.env.VITE_SUPABASE_URL
 const SUPABASE_KEY   = process.env.VITE_SUPABASE_ANON_KEY
 

@@ -100,7 +100,7 @@ const COLUMNS = [
 
 export async function generateTemplate() {
   const wb     = new ExcelJS.Workbook()
-  wb.creator   = 'RootedWord'
+  wb.creator   = "Rooted God's Word"
   wb.created   = new Date()
 
   // ── Sheet 1: Verse Upload ─────────────────────────────────────────────────
@@ -202,7 +202,7 @@ export async function generateTemplate() {
   instrWs.columns = [{ width: 82 }, { width: 36 }]
 
   const instrData = [
-    ['RootedWord — Verse Upload Template Guide', ''],
+    ["Rooted God's Word — Verse Upload Template Guide", ''],
     ['', ''],
     ['HOW TO USE', ''],
     ['1. Go to the "Verse Upload" sheet.', ''],
@@ -287,7 +287,7 @@ export async function generateTemplate() {
   const url = URL.createObjectURL(blob)
   const a   = document.createElement('a')
   a.href     = url
-  a.download = 'RootedWord_Verse_Upload_Template.xlsx'
+  a.download = 'RootedGodsWord_Verse_Upload_Template.xlsx'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

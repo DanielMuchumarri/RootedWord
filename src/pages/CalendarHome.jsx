@@ -35,7 +35,7 @@ export default function CalendarHome() {
   }
 
   const monthName = MONTHS[month - 1]
-  const pageTitle = `Bible Memory Verses — ${monthName} ${year} | RootedWord`
+  const pageTitle = `Bible Memory Verses — ${monthName} ${year} | Rooted God's Word`
   const pageDesc  = `Daily Bible memory verses for ${monthName} ${year}. Scripture structured for kids (Little Roots), youth (Growing Roots), and adults (Deep Roots).`
 
   return (
@@ -45,8 +45,8 @@ export default function CalendarHome() {
         <meta name="description" content={pageDesc} />
         <meta property="og:title"       content={pageTitle} />
         <meta property="og:description" content={pageDesc} />
-        <meta property="og:url"         content="https://rootedword.com/" />
-        <link rel="canonical"           href="https://rootedword.com/" />
+        <meta property="og:url"         content="https://rootedgodsword.com/" />
+        <link rel="canonical"           href="https://rootedgodsword.com/" />
       </Helmet>
 
       {/* Hero Carousel */}
